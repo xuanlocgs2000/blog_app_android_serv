@@ -14,11 +14,20 @@ class PostController extends Controller
     public function index()
     {
         return response([
+            'success' => true,
+
             'posts' => Post::orderBy('created_at', 'desc')
-                ->with('user:id,name,image')->withCount('comments', 'likes')
+                ->with('user:id,name,image,email')
+                ->withCount('comments', 'likes')
                 ->with('likes', function ($like) {
                     return $like->where('user_id', auth()->user()->id)
-                        ->select('id', 'user_id', 'post_id')->get();
+                        ->select('id', 'user_id', 'post_id')
+                        ->get();
+                })
+                ->with('comments', function ($comment) {
+                    return $comment->where('user_id', auth()->user()->id)
+                        ->select('id', 'user_id', 'post_id', 'comment')
+                        ->get();
                 })
                 ->get()
         ], 200);
@@ -26,6 +35,8 @@ class PostController extends Controller
     public function show($id)
     {
         return response([
+            'success' => true,
+
             'post' => Post::where('id', $id)->withCount('comments', 'likes')->get()
         ], 200);
     }
@@ -37,6 +48,9 @@ class PostController extends Controller
         $attrs = $request->validate([
             'body' => 'required|String'
         ]);
+        // $user = auth()->user();
+        $user = User::find(auth()->user()->id);
+
 
         $image = $this->saveImage($request->image, 'posts');
 
@@ -45,10 +59,21 @@ class PostController extends Controller
             'user_id' => auth()->user()->id,
             'image' => $image
         ]);
-
+        $post->user = $user;
+        // $userDetails = [
+        //     'id' => $user->id,
+        //     'name' => $user->name,
+        //     'email' => $user->email,
+        //     'image' => $user->image
+        //     // Thêm các trường khác tùy ý
+        // ];
         return response([
+            'success' => true,
+
             'message' => 'Bai viet da duoc tao',
-            'post' => $post
+            'post' => $post,
+
+            // 'user' => $userDetails
         ], 200);
     }
     //cap nhat bai viet
@@ -74,6 +99,7 @@ class PostController extends Controller
         ]);
 
         return response([
+            'success' => true,
             'message' => 'Bai viet da duoc  cap nhat',
             'post' => $post
         ], 200);
@@ -99,6 +125,8 @@ class PostController extends Controller
         $post->likes()->delete();
         $post->delete();
         return response([
+            'success' => true,
+
             'message' => 'da xoa bai viet'
         ], 200);
     }

@@ -15,18 +15,23 @@ class AuthController extends Controller
         $attrs = $request->validate([
             'name' => 'required|String',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6|confirmed'
+            'password' => 'required|min:6|confirmed',
 
         ]);
+        $defaultAvatar = 'https://ibb.co/RH2wfQh';
+        // $defaultAvatar = "";
+
         //create user 
         $user = User::create([
             'name' => $attrs['name'],
             'email' => $attrs['email'],
-            'password' => bcrypt($attrs['password'])
+            'password' => bcrypt($attrs['password']),
+            'image' => $defaultAvatar,
         ]);
 
         //return user và validate token 
         return response([
+            'success' => true,
             'user' => $user,
             'token' => $user->createToken('secret')->plainTextToken
         ], 200);
@@ -51,6 +56,7 @@ class AuthController extends Controller
 
         //return user và  token 
         return response([
+            'success' => true,
             'user' => auth()->user(),
             'token' => auth()->user()->createToken('secret')->plainTextToken
         ], 200);
@@ -73,19 +79,45 @@ class AuthController extends Controller
     }
 
     //update user
+    // public function update(Request $request)
+    // {
+    //     $attrs = $request->validate([
+    //         'name' => 'required|String'
+    //     ]);
+    //     $image = $this->saveImage($request->image, 'profiles');
+    //     auth()->user()->update([
+    //         'name' => $attrs['name'],
+    //         'image' => $image
+    //     ]);
+    //     return response([
+    //         'success' => true,
+    //         'message' => 'user update success',
+    //         'user' => auth()->user()
+
+    //     ]);
+    // }
     public function update(Request $request)
     {
         $attrs = $request->validate([
-            'name' => 'required|String'
+            'name' => 'required|string',
+            // 'image' => ''
+            'image' => 'nullable|string', // Assuming image is sent as a base64-encoded string
         ]);
-        $image = $this->saveImage($request->image, 'profiles');
+
+        // Save the image and get the URL
+        $image = $this->saveImage($attrs['image'], 'profiles');
+
+        // Update user profile
         auth()->user()->update([
             'name' => $attrs['name'],
-            'image' => $image
+            'image' => $image,
         ]);
+
         return response([
-            'message' => 'user update success',
-            'user' => auth()->user()
+            'success' => true,
+            'message' => 'User update success',
+            'user' => auth()->user(),
+            // 'token' => auth()->user()->createToken('secret')->plainTextToken
 
         ]);
     }
